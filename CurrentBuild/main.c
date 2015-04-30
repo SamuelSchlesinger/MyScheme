@@ -12,7 +12,7 @@ static void init() {
     t = (List) malloc(sizeof(struct cons_cell));
     t->content = "#t";
     f = (List) malloc(sizeof(struct cons_cell));
-    f->content = "#f"; 
+    f->content = "()"; 
     environment = (List) malloc(sizeof(struct cons_cell));  
     environment->content = "()"; 
 }

@@ -208,15 +208,11 @@ double atod(char* str) {
 }
 
 int isFalse(List l) {
-    if (l->car != NULL || l->cdr != NULL) return 0;
-    else if (l == f || !strcmp(l->content, "#f") || !strcmp(l->content, "()")) return 1;
-    else return 0;
+    return (l == f);
 }
 
 int isTrue(List l) {
-    if (l->car != NULL || l->cdr != NULL) return 0;
-    else if (l == t || !strcmp(l->content, "#t")) return 1;
-    else return 0;
+    return (l == t);
 }
 
 List isFunction(List a) {
@@ -321,15 +317,21 @@ List cond(List a, List env, int level) {
     List predicate; 
     List preEvalPredicate;
     List expression;
+    int i = 0;
     while (!isFalse(a)) {
         conditional = car(a);
         preEvalPredicate = car(conditional);
-        predicate = eval(copy(preEvalPredicate), env, level + 1);
         expression = copy(car(cdr(conditional)));
+        if (preEvalPredicate->content != NULL) {
+            if (!strcmp(preEvalPredicate->content, "else")) {
+                return eval(expression, env, level + 1);
+            }
+        }
         if (isTrue(predicate)) {
-            return eval(expression, env, level + 1);    
+            return eval(expression, env, level + 1);
         } 
         a = cdr(a);
+        i++;
     }
     return f;
 }
@@ -415,10 +417,8 @@ List list(List a, List env) {
 List cons(List push, List to) {
     List l = malloc(sizeof(struct cons_cell));
     if (isFalse(push)) return to;
-    if (to->content != NULL) {
-        if (isFalse(to)) {
+    if (isFalse(to)) {
             l->car = push;
-        }
     } else {
         l->car = push;
         l->cdr = to;
@@ -443,11 +443,16 @@ int c_isFunction(List l) {
     } return 0;
 }
 
-List length(List a) {
-    int i = 0;
+int c_length(List a) {
+    int i = 0; 
     for (; a->cdr != NULL; a = a->cdr) {
-        i++; 
+        i++;
     }
+    return i;
+}
+
+List length(List a) {
+    int i = c_length(a);
     char* n = (char*) malloc(sizeof(char) * 20);
     sprintf(n, "%d", i);
     List result = (List) malloc(sizeof(struct cons_cell));
@@ -460,20 +465,22 @@ List lambdaEvaluation(List lambda, List toEvaluate, List env, int level) {
     List arguments = cdr(toEvaluate);
     int more = 1;
     int error = 0;
-    while (more) {
+    int len = c_length(parameter_names);
+    while (len--) {
         List symbol = copy(car(parameter_names));
         List value = copy(car(arguments));
         env = define(symbol, value, env);
-        parameter_names = parameter_names->cdr;
-        arguments = arguments->cdr;
-        if (parameter_names == NULL) {
+        parameter_names = cdr(parameter_names);
+        arguments = cdr(arguments);
+        if (parameter_names == f) {
             more = 0;
-        } else if (arguments == NULL) {
+        } else if (arguments == f) {
             error = 1;
             more = 0;
         }
     }
     List lambdaBody = copy(car(cdr(cdr(lambda))));
+    //printf("environment at level %d: ", level); printList(env); printf("\n");
     return eval(lambdaBody, env, level + 1);
 }
 
@@ -610,7 +617,7 @@ List eval(List toEvaluate, List env, int level) {
        return arithmeticCompare(eval(car(cdr(toEvaluate)), env, level + 1), eval(car(cdr(cdr(toEvaluate))), env, level + 1), 0);
     } else if (!strcmp(func, "=")) {
        return arithmeticCompare(eval(car(cdr(toEvaluate)), env, level + 1), eval(car(cdr(cdr(toEvaluate))), env, level + 1), 2);
-    } else if(!strcmp(func, "%")) {
+    } else if(!strcmp(func, "remainder")) {
        return mod(eval(car(cdr(toEvaluate)), env, level + 1), eval(car(cdr(cdr(toEvaluate))), env, level + 1));
     } else if (!strcmp(func, "define")) {
        env = define(car(cdr(toEvaluate)), car(cdr(cdr(toEvaluate))), env);
@@ -650,6 +657,10 @@ List eval(List toEvaluate, List env, int level) {
                if (*ptr == 'd') n++; 
                else return createList("WHY CAN'T YOU JUST ASK ME FOR THINGS I KNOW?"); 
            } if (*ptr == 'r') return nth(eval(car(cdr(toEvaluate)), env, level+1), n);
+       } else {
+           char* error = (char*) malloc(sizeof(char) * strlen(func) + 30);
+           sprintf(error, "err#1: %s is an undefined function.", func);
+           return createList(error);
        }
     }
 }

@@ -17,6 +17,8 @@ static char token[MAX_TOKEN_SIZE];
 /* Recursively called helper function for main parsing function */
 static List S_Exp(int LEVEL);
 
+static void tab(int);
+
 /* Main parsing function */
 List S_Expression();
 
@@ -32,6 +34,11 @@ typedef struct cons_cell {
 
 
 List createList(char* x) {
+    if (!strcmp (x, "#t")) {
+        return t;
+    } else if (!strcmp(x, "#f") || !strcmp(x, "()")) {
+        return f;
+    } 
     List l = (List) malloc(sizeof(struct cons_cell));
     l->car = NULL; l->cdr = NULL;
     l->content = x;
@@ -39,7 +46,7 @@ List createList(char* x) {
 }
 
 List cdr(List a) {
-    if (a->cdr == NULL) return createList("#f");
+    if (a->cdr == NULL) return f;
     else return a->cdr;
 }
 
@@ -50,34 +57,32 @@ List S_Expression() {
 }
 
 
-void printListHelp(List l, int state) {
+void printListHelp(List l, int level) {
     if (l->content != NULL) { 
-        if (!state) 
-            printf("%s ", l->content);
-        else 
-            printf("%s", l->content);
+        printf(" %s ", l->content);
     } else {
         if (l->car->content != NULL) {
             if (!strcmp(l->car->content, "quote")) {
+                tab(level);
                 printf("\'");
-                printListHelp(l->cdr->car, 0);
+                printListHelp(l->cdr->car, level + 1);
                 return;
             }
         } 
         printf("(");
         if (l->cdr == NULL)   
-            printListHelp(l->car, 1);
+            printListHelp(l->car, level + 1);
         else 
-            printListHelp(l->car, 0);
+            printListHelp(l->car, level + 1);
         while (l->cdr != NULL) {
             l = l->cdr;
             if (l->cdr == NULL) {
                 if (l->car != NULL) 
-                    printListHelp(l->car, 1);   
+                    printListHelp(l->car, level+1);   
             }
             else {
                 if (l->car != NULL)
-                    printListHelp(l->car, 0);
+                    printListHelp(l->car, level+1);
             }
         }
         printf(")");
@@ -160,34 +165,31 @@ static List S_Exp(int LEVEL)
         if (!strcmp(token, "#t"))
         {
             //tab(LEVEL);
-            List toReturn = (List) malloc(sizeof(struct cons_cell));
-            toReturn->content = (char*) malloc(strlen(token) + 1);
-            strcpy(toReturn->content, token);
             //printf("  %s\n", token);
             if (LEVEL)
                 newToken();
-            return toReturn;
+            return t;
         }
         if (!strcmp(token, "#f"))
         {
             //tab(LEVEL);
-            List toReturn = (List) malloc(sizeof(struct cons_cell)); 
-            toReturn->content = (char*) malloc(strlen(token) + 1);
-            strcpy(toReturn->content, token);
             //printf("  %s\n", token);
             if (LEVEL)
                 newToken();
-            return toReturn;
+            return f;
         }
         else
         {
             //tab(LEVEL);
+            int sharp_f = 0;
+            if (!strcmp(token, "()")) sharp_f = 1;
             List toReturn = (List) malloc(sizeof(struct cons_cell));
             toReturn->content = (char*) malloc(sizeof(strlen(token) + 1));
             strcpy(toReturn->content, token);
             //printf("  %s\n", token);
             if (LEVEL)
                 newToken();
+            if (sharp_f) return f;
             return toReturn;
         }
     }

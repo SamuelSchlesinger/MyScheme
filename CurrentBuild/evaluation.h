@@ -10,8 +10,6 @@ typedef struct cons_cell {
     char* content;
 } *List;
 
-List environment, t, f;
-
 /* Prints List */
 void printList(List toPrint);
 

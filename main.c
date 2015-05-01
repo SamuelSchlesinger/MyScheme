@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-//#include "lexer.h"
 #include "parser.h"
 #include "evaluation.h"
 #include <unistd.h>
@@ -36,8 +35,7 @@ int main(int argc, char * argv[])
 
     while(1)
     {
-        printf("s_exp >>  ");   
-        
+        printf("s_exp >>  ");    
         List test = S_Expression();
         printf("\n");
         List result = eval(test, environment, 0);

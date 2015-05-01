@@ -455,8 +455,7 @@ List length(List a) {
 }
 
 List let(List definition, List expression, List env, int level) {
-    definition->cdr->car = eval(definition->cdr->car, env, level + 1);
-    env = cons(definition, env); 
+    env = define(definition->car, definition->cdr->car, env); 
     return eval(expression, env, level + 1); 
 }
 

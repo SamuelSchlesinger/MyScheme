@@ -8,6 +8,7 @@ typedef struct cons_cell {
     List car;
     List cdr;
     char* content;
+    int keep;
 } *List;
 
 /* Prints List */

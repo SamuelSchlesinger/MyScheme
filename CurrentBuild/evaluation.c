@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "lexer.h"
 #include "parser.h"
 #include "evaluation.h"
@@ -38,7 +39,7 @@ List isFunction(List);
 double atod(char* str);
 char* dtoa(double str);
 
-List syscall(List a, List env) {
+List system_call(List a, List env) {
     if (a->content != NULL) {
         int len = strlen(a->content);
         if (*a->content == '\"') {
@@ -50,14 +51,14 @@ List syscall(List a, List env) {
             }
             system(call);
             printf("\n");     
-            return createList(call);
+            return createSymbol(call);
         } else {
             system(a->content);
             printf("\n");
-            return createList(a->content);
+            return createSymbol(a->content);
         }
     } else 
-        return createList("No call given");
+        return createSymbol("No call given");
 }
 
 List arithmeticCompare(List left, List right, int greater_than) {
@@ -76,22 +77,21 @@ List arithmeticCompare(List left, List right, int greater_than) {
 }
 
 List last(List a) {
-    for (; a->cdr->cdr != NULL; a = a->cdr);
+    for (; a->cdr!= NULL; a = a->cdr);
     return car(a);
 }
 
 List add(List a, List env) {
     double total = 0;
-    for (; a->cdr != NULL; a = a->cdr) {
+    for (; a != NULL; a = a->cdr) {
         List current = eval(car(a), env, 1);
         if (current->content != NULL) { 
             total += atod(current->content);
         }
     }   
-    List result = (List) malloc(sizeof(struct cons_cell));
-    result->content = (char*) malloc(sizeof(char) * 20);
-    sprintf(result->content, "%f", total);
-    return result;  
+    char* result_ptr = (char*) malloc(sizeof(char) * 20);
+    sprintf(result_ptr, "%f", total);
+    return createSymbol(result_ptr);  
 }
 
 List mod(List a, List b) {
@@ -100,18 +100,18 @@ List mod(List a, List b) {
     int answer = a_d%b_d;
     char* r = (char*) malloc(sizeof(char) * 20);
     sprintf(r, "%d", answer);
-    return createList(r);
+    return createSymbol(r);
 }
 
 List and(List a, List env) {
-    for (; a->cdr != NULL; a = a->cdr) {
+    for (; a != NULL; a = a->cdr) {
         List predicate = eval(car(a), env, 1);
         if (isFalse(predicate)) return f;
     } return t;
 }
 
 List or(List a, List env) {
-    for (; a->cdr != NULL; a = a->cdr) {
+    for (; a != NULL; a = a->cdr) {
         List predicate = eval(car(a), env, 1);
         if (isTrue(predicate)) return t;
     } return f;
@@ -129,16 +129,15 @@ List mult(List a, List env) {
         total = atod(first->content);
     }
     a = a->cdr;
-    for (; a->cdr != NULL; a = a->cdr) {
+    for (; a != NULL; a = a->cdr) {
         List current = eval(car(a), env, 1);
         if (current->content != NULL) {
             total *= atod(current->content);
         }
     } 
-    List result = (List) malloc(sizeof(struct cons_cell));
-    result->content = (char*) malloc(sizeof(char) * 20);
-    sprintf(result->content, "%f", total);
-    return result;
+    char* result_ptr = (char*) malloc(sizeof(char) * 20);
+    sprintf(result_ptr, "%f", total);
+    return createSymbol(result_ptr);
 }
 
 List divide(List a, List env) {
@@ -148,16 +147,15 @@ List divide(List a, List env) {
         total = atod(first->content);
     }
     a = a->cdr;
-    for (; a->cdr != NULL; a = a->cdr) {
+    for (; a != NULL; a = a->cdr) {
         List current = eval(car(a), env, 1);
         if (current->content != NULL) {
             total /= atod(current->content);
         }
     }
-    List result = (List) malloc(sizeof(struct cons_cell));
-    result->content = (char*) malloc(sizeof(char) * 20);
-    sprintf(result->content, "%f", total);
-    return result;
+    char* result_content = (char*) malloc(sizeof(char) * 20);
+    sprintf(result_content, "%f", total);
+    return createSymbol(result_content);
 }
 
 List sub(List a, List env) {
@@ -167,16 +165,15 @@ List sub(List a, List env) {
         total = atod(first->content);
     }
     a = a->cdr;
-    for (; a->cdr != NULL; a = a->cdr) {
+    for (; a != NULL; a = a->cdr) {
         List current = eval(car(a), env, 1);
         if (current->content != NULL) {
             total -= atod(current->content);
         }
     }
-    List result = (List) malloc(sizeof(struct cons_cell));
-    result->content = (char*) malloc(sizeof(char) * 20);
-    sprintf(result->content, "%f", total);
-    return result;
+    char* result_content = (char*) malloc(sizeof(char) * 20);
+    sprintf(result_content, "%f", total);
+    return createSymbol(result_content);
 }
 
 double atod(char* str) {
@@ -239,15 +236,11 @@ List isList(List a) {
 List copy(List a) {
     if (a == NULL) return NULL;
     if (a->content != NULL) {
-        List toReturn = (List) malloc(sizeof(struct cons_cell));
-        char* c = (char*) malloc(sizeof(char) * strlen(a->content) + 1);
-        strcpy(c, a->content);
-        *(c + strlen(a->content)) = '\0';
-        toReturn->content = c;
-        return toReturn;
+
+        return createSymbol(a->content);
     }
     else {
-        List toReturn = (List) malloc(sizeof(struct cons_cell));
+        List toReturn = createList();
         toReturn->car = copy(a->car);
         toReturn->cdr = copy(a->cdr);
         return toReturn;
@@ -255,8 +248,8 @@ List copy(List a) {
 }
 
 List define (List id, List expression, List env) {
-    List definition = (List) malloc(sizeof(struct cons_cell));
-    definition->cdr = (List) malloc(sizeof(struct cons_cell));
+    List definition = createList();
+    definition->cdr = createList();
     // case for variables
     if (id->content != NULL) {
         definition->car = copy(id);
@@ -265,17 +258,16 @@ List define (List id, List expression, List env) {
     // case for functions 
     else {
         definition->car = copy(car(id));
-        List innards = (List) malloc(sizeof(struct cons_cell));
-        innards->car = (List) malloc(sizeof(struct cons_cell));
-        innards->car->content = "lambda";
-        innards->cdr = (List) malloc(sizeof(struct cons_cell));
+        List innards = createList();
+        innards->car = createSymbol("lambda");
+        innards->cdr = createList();
         List innards2 = innards->cdr;
         if (cdr(id) != f) {
             innards2->car = copy(cdr(id));
         } else {
             innards2->car = f;
         }
-        innards2->cdr = (List) malloc(sizeof(struct cons_cell));
+        innards2->cdr = createList();
         innards2->cdr->car = copy(expression);
         definition->cdr->car = copy(innards);
     } 
@@ -327,6 +319,7 @@ List cond(List a, List env, int level) {
                 return eval(expression, env, level + 1);
             }
         }
+        predicate = eval(preEvalPredicate, env, level + 1);
         if (isTrue(predicate)) {
             return eval(expression, env, level + 1);
         } 
@@ -336,10 +329,10 @@ List cond(List a, List env, int level) {
     return f;
 }
 
-List if_form(List test_expr, List then_expr, List else_expr) {
-    if (isTrue(test_expr)) {
-        return then_expr;
-    } else return else_expr;
+List if_form(List test_expr, List then_expr, List else_expr, List env, int level) {
+    if (eval(test_expr, env, level + 1) == t) {
+        return eval(then_expr, env, level + 1);
+    } else return eval(else_expr, env, level + 1);
 }
 
 static int equal_helper(List a, List b) {
@@ -384,6 +377,7 @@ List equal(List a, List b) {
 
 /* Returns the car of a Cons Cell */
 List car(List l) {
+    if (l == NULL) return f;
     if (l->car == NULL) return f;
     return l->car;
 }
@@ -408,7 +402,7 @@ List quote(List l) {
 List list(List a, List env) {
     a = copy(a);
     List rem = a;
-    for (; a->cdr != NULL; a = cdr(a)) {
+    for (; a != NULL; a = a->cdr) {
         a->car = eval(a->car, env, 1);
     }
     return rem;
@@ -416,9 +410,9 @@ List list(List a, List env) {
 
 List cons(List push, List to) {
     List l = malloc(sizeof(struct cons_cell));
-    if (isFalse(push)) return to;
     if (isFalse(to)) {
             l->car = push;
+            l->cdr = NULL;
     } else {
         l->car = push;
         l->cdr = to;
@@ -445,7 +439,7 @@ int c_isFunction(List l) {
 
 int c_length(List a) {
     int i = 0; 
-    for (; a->cdr != NULL; a = a->cdr) {
+    for (; a != NULL; a = a->cdr) {
         i++;
     }
     return i;
@@ -455,9 +449,7 @@ List length(List a) {
     int i = c_length(a);
     char* n = (char*) malloc(sizeof(char) * 20);
     sprintf(n, "%d", i);
-    List result = (List) malloc(sizeof(struct cons_cell));
-    result->content = n;
-    return result;
+    return createSymbol(n);
 }
 
 List lambdaEvaluation(List lambda, List toEvaluate, List env, int level) {
@@ -545,15 +537,15 @@ List eval(List toEvaluate, List env, int level) {
             if (!*str) return 0;
             while (*str) {
                 if (!((*str >= '0') && (*str <= '9')) && (*str != '.')) {
-                    List error = (List) malloc(sizeof(struct cons_cell));
-                    error->content = "Error: This is not a defined symbol!";
-                    return error;
+                    char* err = (char*) malloc(strlen(str) + 32);
+                    scanf(err, "err#2: %s is not a defined symbol\0", str);
+                    return createSymbol(err);
                 }
                 if (*str == '.') {
                     if (decimal) {
-                        List error = (List) malloc(sizeof(struct cons_cell)); 
-                        error->content = "Error: This is not a defined symbol!";
-                        return error;
+                        char* err = (char*) malloc(strlen(str) + 32);
+                        scanf(err, "err#2: %s is not a defined symbol\0", str);
+                        return createSymbol(err);
                     } 
                     str++; 
                     decimal = 1;
@@ -586,7 +578,7 @@ List eval(List toEvaluate, List env, int level) {
     } else if (!strcmp(func, "cond")) {
        return cond((cdr(toEvaluate)), env, level + 1);
     } else if (!strcmp(func, "if")) {
-       return eval(if_form(eval(car(cdr(toEvaluate)), env, level + 1), car(cdr(cdr(toEvaluate))), car(cdr(cdr(cdr(toEvaluate))))), env, level + 1);
+       return if_form(car(cdr(toEvaluate)), car(cdr(cdr(toEvaluate))), car(cdr(cdr(cdr(toEvaluate)))), env, level);
     } else if (!strcmp(func, "assoc")) {
        return assoc(eval((car(cdr(toEvaluate))), env, level + 1), eval((car(cdr(cdr(toEvaluate)))), env, level + 1)); 
     } else if (!strcmp(func, "symbol?")) {
@@ -646,7 +638,7 @@ List eval(List toEvaluate, List env, int level) {
        printf("Goodbye!\n");
        exit(0);
     } else if (!strcmp(func, "syscall")) {
-       return syscall(eval(car(cdr(toEvaluate)), env, level + 1), env);
+       return system_call(eval(car(cdr(toEvaluate)), env, level + 1), env);
     } else {
        char* ptr = func;
        if (*ptr++ == 'c' && *ptr++ == 'a') {
@@ -655,12 +647,12 @@ List eval(List toEvaluate, List env, int level) {
            int len = strlen(func);
            for (; *(ptr+1) != 0; ptr++) {
                if (*ptr == 'd') n++; 
-               else return createList("WHY CAN'T YOU JUST ASK ME FOR THINGS I KNOW?"); 
+               else return createSymbol("WHY CAN'T YOU JUST ASK ME FOR THINGS I KNOW?"); 
            } if (*ptr == 'r') return nth(eval(car(cdr(toEvaluate)), env, level+1), n);
        } else {
            char* error = (char*) malloc(sizeof(char) * strlen(func) + 30);
            sprintf(error, "err#1: %s is an undefined function.", func);
-           return createList(error);
+           return createSymbol(error);
        }
     }
 }

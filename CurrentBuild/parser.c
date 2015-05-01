@@ -30,10 +30,50 @@ typedef struct cons_cell {
     List car;
     List cdr;
     char* content;
+    int keep; 
 } *List;
 
+void mark(List);
 
-List createList(char* x) {
+typedef struct node {
+    List L;
+    struct node* next;
+} *SCHEME_HEAP;
+
+static SCHEME_HEAP createEmptyNode() {
+    SCHEME_HEAP n = (SCHEME_HEAP) malloc(sizeof(struct node));
+    n->L = NULL;
+    n->next = NULL;
+    return n;
+}
+
+static SCHEME_HEAP heap;
+static SCHEME_HEAP end;
+
+void initialize_SCHEME_HEAP() {
+   heap = createEmptyNode();
+   end = heap; 
+}
+
+void pushToHeap(List l) {
+   end->L = l;
+   end->next = createEmptyNode();
+   end = end->next;
+}
+
+void garbageCollect() {    
+
+}
+
+void mark(List current) {
+    if (current != NULL) {
+        current->keep = 1;
+        mark(current->car);
+        mark(current->cdr);
+    }
+}
+
+List createSymbol(char* x) {
     if (!strcmp (x, "#t")) {
         return t;
     } else if (!strcmp(x, "#f") || !strcmp(x, "()")) {
@@ -42,10 +82,21 @@ List createList(char* x) {
     List l = (List) malloc(sizeof(struct cons_cell));
     l->car = NULL; l->cdr = NULL;
     l->content = x;
+    pushToHeap(l);
+    return l;
+}
+
+List createList() {
+    List l = (List) malloc(sizeof(struct cons_cell));
+    l->car = NULL;
+    l->cdr = NULL;
+    l->content = NULL;
+    pushToHeap(l);
     return l;
 }
 
 List cdr(List a) {
+    if (a == NULL) return f;
     if (a->cdr == NULL) return f;
     else return a->cdr;
 }
@@ -63,7 +114,7 @@ void printListHelp(List l, int level) {
     } else {
         if (l->car->content != NULL) {
             if (!strcmp(l->car->content, "quote")) {
-                tab(level);
+    //            tab(level);
                 printf("\'");
                 printListHelp(l->cdr->car, level + 1);
                 return;
@@ -137,10 +188,7 @@ static List S_Exp(int LEVEL)
              last = current;
              current = current->cdr;
         }
-        if (!things) {
-            toReturn->cdr = NULL;
-        } 
-        
+        last->cdr = NULL;
         if (LEVEL)
         {
             newToken();

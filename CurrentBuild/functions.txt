@@ -2,8 +2,8 @@ car
 cdr
 cons
 quote
-cond 
-if
+cond // funky
+if 
 assoc
 symbol?
 eval

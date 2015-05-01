@@ -163,8 +163,7 @@ static List S_Exp(int LEVEL)
         if (!strcmp(token, "\'")) {
             newToken();
             List toReturn = createList();
-            toReturn->car = createList();
-            toReturn->car->content = "quote";
+            toReturn->car = createSymbol("quote");
             //tab(LEVEL);
             //printf("  quote\n");
             toReturn->cdr = createList();

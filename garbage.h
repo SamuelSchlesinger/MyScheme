@@ -9,5 +9,6 @@ void garbageCollect();
 void pushToHeap(List);
 void mark(List);
 List getN();
+void printN_DELETED();
 
 #endif

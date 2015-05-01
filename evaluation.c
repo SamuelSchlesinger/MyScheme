@@ -38,6 +38,7 @@ List copy(List); // functional
 List isList(List);
 List isFunction(List);
 List let(List, List, List, int);
+List flatten(List, List);
 double atod(char* str);
 char* dtoa(double str);
 
@@ -511,6 +512,17 @@ List number(List a) {
     return t;
 }
 
+List flatten(List l, List env) {
+    if (isFalse(l)) {
+        return f;
+    } else if (l->content != NULL) {
+        List new_l = createList();
+        new_l->car = l;
+        return new_l;
+    } else {
+        return append(flatten(car(l), env), flatten(cdr(l), env));
+    }
+}
 
 List eval(List toEvaluate, List env, int level) {
     char* func; 
@@ -602,6 +614,8 @@ List eval(List toEvaluate, List env, int level) {
        return append(eval(car(cdr(toEvaluate)), env, level + 1), eval(car(cdr(cdr(toEvaluate))), env, level + 1));
     } else if (!strcmp(func, "list?")) {
        return isList(eval(car(cdr(toEvaluate)), env, level + 1));
+    } else if (!strcmp(func, "flatten")) {
+       return flatten(eval(car(cdr(toEvaluate)), env, level + 1), env);
     } else if (!strcmp(func, "function?")) {
        return isFunction(eval(car(cdr(toEvaluate)), env, level + 1));
     } else if (!strcmp(func, "+")) {
@@ -649,7 +663,7 @@ List eval(List toEvaluate, List env, int level) {
        system("clear");
        return createSymbol("clear"); 
     } else if (!strcmp(func, "quit") || !strcmp(func, "exit")) {
-       printf("Goodbye!\n");
+       printf("Goodbye!\n\n");
        exit(0);
     } else if (!strcmp(func, "syscall")) {
        return system_call(eval(car(cdr(toEvaluate)), env, level + 1), env);

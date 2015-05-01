@@ -20,6 +20,7 @@ void initialize_SCHEME_HEAP();
 void print_SCHEME_HEAP();
 void mark(List);
 int N;
+int N_DELETED;
 SCHEME_HEAP heap;
 SCHEME_HEAP end;
 
@@ -27,6 +28,10 @@ List getN() {
     char* str = (char*) malloc(sizeof(char) * 20);
     sprintf(str, "%d", N);
     return createSymbol(str);
+}
+
+void printN_DELETED() {
+    printf("%d\n", N_DELETED);
 }
 
 SCHEME_HEAP createEmptyNode() {
@@ -38,6 +43,7 @@ SCHEME_HEAP createEmptyNode() {
 
 void initialize_SCHEME_HEAP() {
     N = 0;
+    N_DELETED = 0;
     heap = createEmptyNode();
     heap->next = createEmptyNode();
     end = heap->next;
@@ -77,6 +83,7 @@ void garbageCollect() {
            struct node* p = current;
            current = current->next;
            N--;
+           N_DELETED++;
            free(p);
            i++;
        } else {

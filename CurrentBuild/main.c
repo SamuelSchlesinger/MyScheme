@@ -26,6 +26,14 @@ int main(int argc, char * argv[])
 
     printf("\nScheme!\n\n");
 
+    int garbage = 0;
+
+    if (argc > 1) {
+        if (!strcmp(argv[1], "ng")) {
+            garbage = 1;
+        }
+    }
+
     while(1)
     {
         printf("s_exp >>  ");   
@@ -35,7 +43,13 @@ int main(int argc, char * argv[])
         List result = eval(test, environment, 0);
         printf("value >>  ");
         printList(result); 
-//        garbageCollect();
         printf("\n\n");
+        if (!garbage) {
+            garbageCollect();
+        }
     }
+
+    printf("\n");
+
+    return EXIT_SUCCESS;
 }

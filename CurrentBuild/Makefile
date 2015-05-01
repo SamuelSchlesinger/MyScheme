@@ -4,11 +4,14 @@
 #breaks it up into tokens.
 
 
-scheme: lexer.o parser.o evaluation.o main.o 
-	gcc -o scheme main.o evaluation.o parser.o lexer.o
+scheme: clean lexer.o parser.o evaluation.o main.o garbage.o 
+	gcc -o scheme main.o evaluation.o parser.o lexer.o garbage.o
 
 evaluation.o: evaluation.c
 	gcc -c evaluation.c
+
+garbage.o: garbage.c
+	gcc -c garbage.c
 
 parser.o: parser.c 
 	gcc -c parser.c
@@ -20,7 +23,7 @@ main.o: main.c
 	gcc -c main.c
 
 clean:
-	rm -f *~ *.o *.a
+	rm -f *~ *.o *.a .*.swp
 
 #^^^^^^This space must be a TAB!!.
 

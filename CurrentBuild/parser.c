@@ -2,7 +2,7 @@
 #include <string.h>
 #include "lexer.h"
 #include "parser.h"
-
+#include "garbage.h"
 
 /**************************************************************************
 * Recursive descent parser for the following EBNF notation:
@@ -33,75 +33,6 @@ typedef struct cons_cell {
     int keep; 
 } *List;
 
-void mark(List);
-
-typedef struct node {
-    List L;
-    struct node* next;
-} *SCHEME_HEAP;
-
-static SCHEME_HEAP createEmptyNode() {
-    SCHEME_HEAP n = (SCHEME_HEAP) malloc(sizeof(struct node));
-    n->L = NULL;
-    n->next = NULL;
-    return n;
-}
-
-static SCHEME_HEAP heap;
-static SCHEME_HEAP end;
-
-void initialize_SCHEME_HEAP() {
-   heap = createEmptyNode();
-   heap->next = createEmptyNode();
-   end = heap->next; 
-}
-
-void print_SCHEME_HEAP() {
-   struct node * ptr = heap->next;
-   int i = 0;
-   for (; ptr != end; ptr = ptr->next) {
-       if (ptr == NULL) continue;
-       i++;
-       printf("HEAP NODE #%d: ", i);
-       if (ptr->L != NULL)
-           printList(ptr->L);
-       printf("\n");
-   }   
-}
-
-void pushToHeap(List l) {
-   end->L = l;
-   end->next = createEmptyNode();
-   end = end->next;
-}
-
-void garbageCollect() {    
-   struct node * current = heap->next; 
-   struct node * last = heap;
-   mark(environment);
-   int i = 0;
-   for (; current->next != NULL;) {
-       if (!current->L->keep) {
-           free(current->L);
-           last->next = current->next;
-           struct node* hold = current;
-           current = current->next;
-           free(hold);
-           i++;
-       } else {
-           current = current->next;
-           current->L->keep = 0;
-       }
-   }
-}
-
-void mark(List current) {
-    if (current != NULL) {
-        current->keep = 1;
-        mark(current->car);
-        mark(current->cdr);
-    }
-}
 
 List createSymbol(char* x) {
     if (!strcmp (x, "#t")) {

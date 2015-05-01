@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "lexer.h"
 #include "parser.h"
+#include "garbage.h"
 #include "evaluation.h"
 
 List t, f;
@@ -613,6 +614,7 @@ List eval(List toEvaluate, List env, int level) {
        return mod(eval(car(cdr(toEvaluate)), env, level + 1), eval(car(cdr(cdr(toEvaluate))), env, level + 1));
     } else if (!strcmp(func, "define")) {
        env = define(car(cdr(toEvaluate)), car(cdr(cdr(toEvaluate))), env);
+       mark(env);
        environment = env;
        return car(car((env)));
     } else if (!strcmp(func, "and")) {
@@ -629,12 +631,14 @@ List eval(List toEvaluate, List env, int level) {
        return length(eval(car(cdr(toEvaluate)), env, level + 1));
     } else if (!strcmp(func, "list")) {
        return list(cdr(toEvaluate), env);
+    } else if (!strcmp(func, "heap-size")) {
+       return getN();
     } else if (!strcmp(func, "environment")) {
        return env;
     } else if (!strcmp(func, "clear") || !strcmp(func, "l")) {
        system("clear");
-       return createList("clear"); 
-    } else if (!strcmp(func, "quit")) {
+       return createSymbol("clear"); 
+    } else if (!strcmp(func, "quit") || !strcmp(func, "exit")) {
        printf("Goodbye!\n");
        exit(0);
     } else if (!strcmp(func, "syscall")) {

@@ -35,7 +35,7 @@ int main(int argc, char * argv[])
         List result = eval(test, environment, 0);
         printf("value >>  ");
         printList(result); 
-        garbageCollect();
+//        garbageCollect();
         printf("\n\n");
     }
 }

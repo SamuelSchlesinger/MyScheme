@@ -13,6 +13,7 @@ List t, f, environment;
 /* Heap utils */
 typedef struct node *SCHEME_HEAP;
 void initialize_SCHEME_HEAP();
+void print_SCHEME_HEAP();
 
 /* Prints List */
 void printList(List toPrint);

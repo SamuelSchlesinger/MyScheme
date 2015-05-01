@@ -52,7 +52,21 @@ static SCHEME_HEAP end;
 
 void initialize_SCHEME_HEAP() {
    heap = createEmptyNode();
-   end = heap; 
+   heap->next = createEmptyNode();
+   end = heap->next; 
+}
+
+void print_SCHEME_HEAP() {
+   struct node * ptr = heap->next;
+   int i = 0;
+   for (; ptr != end; ptr = ptr->next) {
+       if (ptr == NULL) continue;
+       i++;
+       printf("HEAP NODE #%d: ", i);
+       if (ptr->L != NULL)
+           printList(ptr->L);
+       printf("\n");
+   }   
 }
 
 void pushToHeap(List l) {
@@ -62,7 +76,23 @@ void pushToHeap(List l) {
 }
 
 void garbageCollect() {    
-
+   struct node * current = heap->next; 
+   struct node * last = heap;
+   mark(environment);
+   int i = 0;
+   for (; current->next != NULL;) {
+       if (!current->L->keep) {
+           free(current->L);
+           last->next = current->next;
+           struct node* hold = current;
+           current = current->next;
+           free(hold);
+           i++;
+       } else {
+           current = current->next;
+           current->L->keep = 0;
+       }
+   }
 }
 
 void mark(List current) {
@@ -82,6 +112,7 @@ List createSymbol(char* x) {
     List l = (List) malloc(sizeof(struct cons_cell));
     l->car = NULL; l->cdr = NULL;
     l->content = x;
+    l->keep = 0;
     pushToHeap(l);
     return l;
 }
@@ -91,6 +122,7 @@ List createList() {
     l->car = NULL;
     l->cdr = NULL;
     l->content = NULL;
+    l->keep = 0;
     pushToHeap(l);
     return l;
 }
@@ -171,11 +203,9 @@ static List S_Exp(int LEVEL)
         //tab(LEVEL); 
         //printf("%s\n", token);
         newToken();
-        List toReturn = (List) malloc(sizeof(struct cons_cell));
-        toReturn->content = NULL;
+        List toReturn = createList();
         toReturn->car = S_Exp(LEVEL+1);
-        toReturn->cdr = (List) malloc(sizeof(struct cons_cell));
-        toReturn->content = NULL;
+        toReturn->cdr = createList();
         List current = toReturn->cdr;
         List last = toReturn;
         int things = 0;
@@ -184,7 +214,7 @@ static List S_Exp(int LEVEL)
              things = 1;
              current->content = NULL;
              current->car = S_Exp(LEVEL+1);
-             current->cdr = (List) malloc(sizeof(struct cons_cell));
+             current->cdr = createList();
              last = current;
              current = current->cdr;
         }
@@ -201,12 +231,12 @@ static List S_Exp(int LEVEL)
     {
         if (!strcmp(token, "\'")) {
             newToken();
-            List toReturn = (List) malloc(sizeof(struct cons_cell));
-            toReturn->car = (List) malloc(sizeof(struct cons_cell));
+            List toReturn = createList();
+            toReturn->car = createList();
             toReturn->car->content = "quote";
             //tab(LEVEL);
             //printf("  quote\n");
-            toReturn->cdr = (List) malloc(sizeof(struct cons_cell));
+            toReturn->cdr = createList();
             toReturn->cdr->car = S_Exp(LEVEL);
             return toReturn;
         }
@@ -231,7 +261,7 @@ static List S_Exp(int LEVEL)
             //tab(LEVEL);
             int sharp_f = 0;
             if (!strcmp(token, "()")) sharp_f = 1;
-            List toReturn = (List) malloc(sizeof(struct cons_cell));
+            List toReturn = createList();
             toReturn->content = (char*) malloc(sizeof(strlen(token) + 1));
             strcpy(toReturn->content, token);
             //printf("  %s\n", token);
